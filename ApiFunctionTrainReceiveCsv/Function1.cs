@@ -20,7 +20,7 @@ public class Function1
     }
 
     [Function("Function1")]
-    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
+    public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
     {
 
         if (req.ContentType.Contains("csv"))
