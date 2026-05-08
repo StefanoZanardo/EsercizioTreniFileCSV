@@ -13,5 +13,6 @@ builder.Services
     .ConfigureFunctionsApplicationInsights();
 
 builder.Services.AddScoped<UploadStorageService>();
+builder.Services.AddScoped<NormalizationCsvService>();
 
 builder.Build().Run();

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Dapper;
 
 namespace ApiFunctionTrainReceiveCsv.Service
 {
@@ -26,6 +27,8 @@ namespace ApiFunctionTrainReceiveCsv.Service
             var serviceBlob = blobServiceClient.GetBlobContainerClient("train-csv-storage");
 
             await serviceBlob.UploadBlobAsync(fileCsv.NameFile, fileCsv.content);
+
+
         }
     }
 }

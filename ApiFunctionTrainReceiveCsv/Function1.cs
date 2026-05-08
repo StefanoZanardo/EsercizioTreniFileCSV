@@ -13,10 +13,13 @@ public class Function1
 
     private UploadStorageService _uploadStorageService;
 
-    public Function1(ILogger<Function1> logger, UploadStorageService uploadStorageService)
+    private NormalizationCsvService _normalizationCsvService;
+
+    public Function1(ILogger<Function1> logger, UploadStorageService uploadStorageService, NormalizationCsvService normalizationCsvService)
     {
         _logger = logger;
         _uploadStorageService = uploadStorageService;
+        _normalizationCsvService = normalizationCsvService;
     }
 
     [Function("Function1")]
@@ -52,10 +55,9 @@ public class Function1
     {
         _logger.LogInformation($"Nuovo file rilevato: {name}");
 
-        using var reader = new StreamReader(blobStream);
-        var content = await reader.ReadToEndAsync();
 
-        _logger.LogInformation(content);
+        await _normalizationCsvService.NormilizeCsvStream(blobStream);
+        
     }
 }
 
