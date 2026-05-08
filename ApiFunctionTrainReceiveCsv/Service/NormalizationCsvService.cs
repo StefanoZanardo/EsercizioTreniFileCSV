@@ -77,11 +77,29 @@ namespace ApiFunctionTrainReceiveCsv.Service
                                                 .Select(a => a.RitardoMinuti).
                                                 Average();
 
+                var media_anomaly_score = records.Where(a => a.AnomalyScore > 0 && a.AnomalyScore != null)
+                                            .Select(a => a.AnomalyScore).Average();
+                var conteggioSeverita = records
+                    .Where(r => !string.IsNullOrWhiteSpace(r.LivelloSeverita) && !r.LivelloSeverita.Contains("n/d") && !r.LivelloSeverita.Contains("nessuna") && !r.LivelloSeverita.Contains("?"))
+                    .GroupBy(r => r.LivelloSeverita.ToLower().Trim())
+                    .ToDictionary(g => g.Key, g => g.Count() / 5);
+                int tempValue = 0;
 
-
-
-                foreach (var record in records)
+                foreach (var conteggio in conteggioSeverita)
                 {
+                    tempValue += conteggio.Value;
+                    string key = conteggio.Key;
+                    conteggioSeverita[key] = tempValue;
+                }
+
+                var totalePercentualeConteggioServerità = records.Where(r => !string.IsNullOrWhiteSpace(r.LivelloSeverita)).Count();
+
+
+                var random = new Random();
+
+                for (int i = 0; i < records.Count; i++)
+                {
+                    var record = records[i];
                     if (record == null) continue;
                     var resultTimeStamp = await ParseTimestamp(record.Timestamp);
                     if (resultTimeStamp != null)
@@ -91,8 +109,15 @@ namespace ApiFunctionTrainReceiveCsv.Service
                     }
                     else
                     {
-                        var indice = records.IndexOf(record);
-                        record.TimestampParsed = records[indice - 1].TimestampParsed;
+                        int index = -1;
+                        while (resultTimeStamp is null)
+                        {
+                            resultTimeStamp =  records[i + index].TimestampParsed;
+                            index--;
+                        }
+
+                        record.TimestampParsed = resultTimeStamp;
+
                     }
                     var resultVelocità = await PulisciVelocita(record.VelocitaRaw);
                     if(resultVelocità != null)
@@ -129,6 +154,46 @@ namespace ApiFunctionTrainReceiveCsv.Service
                     else if(record.RitardoMinuti < 0)
                     {
                         record.RitardoMinuti = 0;
+                    }
+
+                    if(record.AnomalyScore == null || record.AnomalyScore <= 0)
+                    {
+                        record.AnomalyScore = media_anomaly_score;
+                    }
+
+
+                    if (!string.IsNullOrEmpty(record.TipoEvento)) 
+
+                    {
+                        if (record.TipoEvento.Contains("nessuno", StringComparison.OrdinalIgnoreCase))
+                        {
+                            record.LivelloSeverita = "nessuna";
+                        }
+
+                        if (string.IsNullOrEmpty(record.LivelloSeverita) || record.LivelloSeverita.Contains("?") || record.LivelloSeverita.Contains("n/d"))
+                        {
+
+                            int numrand = random.Next(totalePercentualeConteggioServerità/5);
+
+
+                            string nomedamette = string.Empty;
+                            foreach(var conteggio in conteggioSeverita)
+                            {
+                                if(conteggio.Value < numrand)
+                                {
+                                    nomedamette = conteggio.Key;
+                                }
+                            }
+
+                            record.LivelloSeverita = nomedamette;
+
+                        }
+                        
+                    }
+                    else
+                    {
+                        record.TipoEvento = "nessuno";
+                        record.LivelloSeverita = "nessuna";
                     }
                     
                 }
@@ -211,6 +276,8 @@ namespace ApiFunctionTrainReceiveCsv.Service
                 System.Globalization.CultureInfo.InvariantCulture,
                 out var result) ? result : null;
         }
+
+
 
 
     }
